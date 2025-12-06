@@ -8,9 +8,12 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import fetch from "node-fetch";
+import * as fs from "fs/promises";
+import * as path from "path";
 
 const HYPIXEL_API_KEY = process.env.HYPIXEL_API_KEY || "";
 const BASE_URL = "https://api.hypixel.net/v2";
+const SKYSHARDS_DATA_PATH = process.env.SKYSHARDS_DATA_PATH || path.join(process.env.HOME || "", ".skyshards");
 
 interface HypixelPlayerResponse {
   success: boolean;
@@ -180,6 +183,180 @@ async function getActiveAuctions(playerName?: string, page: number = 0): Promise
   }, null, 2);
 }
 
+// SkyShards related functions
+const ATTRIBUTE_SHARDS = [
+  "ATTRIBUTE_SHARD",
+  "SPEED_ARTIFACT",
+  "MANA_POOL_ARTIFACT",
+  "VITALITY_ARTIFACT",
+  "LIFELINE_ARTIFACT",
+  "MANA_REGENERATION_ARTIFACT",
+  "BLAZING_FORTUNE_ARTIFACT",
+  "FISHING_EXPERIENCE_ARTIFACT",
+  "DOUBLE_HOOK_ARTIFACT",
+  "TROPHY_HUNTER_ARTIFACT"
+];
+
+const ATTRIBUTE_COMBINATIONS: Record<string, { tier: number; materials: string[] }> = {
+  "SPEED": { tier: 1, materials: ["ATTRIBUTE_SHARD"] },
+  "MANA_POOL": { tier: 1, materials: ["ATTRIBUTE_SHARD"] },
+  "VITALITY": { tier: 1, materials: ["ATTRIBUTE_SHARD"] },
+  "LIFELINE": { tier: 2, materials: ["SPEED", "VITALITY"] },
+  "MANA_REGENERATION": { tier: 2, materials: ["SPEED", "MANA_POOL"] },
+  "BLAZING_FORTUNE": { tier: 3, materials: ["SPEED", "MANA_POOL", "VITALITY"] },
+  "FISHING_EXPERIENCE": { tier: 2, materials: ["MANA_POOL", "VITALITY"] },
+  "DOUBLE_HOOK": { tier: 3, materials: ["FISHING_EXPERIENCE", "SPEED"] },
+  "TROPHY_HUNTER": { tier: 3, materials: ["FISHING_EXPERIENCE", "VITALITY"] }
+};
+
+async function getShardPrices(shardIds?: string[]): Promise<string> {
+  const data: BazaarResponse = await makeHypixelRequest("/skyblock/bazaar");
+
+  if (!data.success || !data.products) {
+    return "Failed to fetch bazaar data";
+  }
+
+  const shardsToCheck = shardIds && shardIds.length > 0 ? shardIds : ATTRIBUTE_SHARDS;
+  const shardPrices: Record<string, any> = {};
+
+  for (const shardId of shardsToCheck) {
+    const productId = shardId.toUpperCase();
+    const product = data.products[productId];
+
+    if (product) {
+      shardPrices[productId] = {
+        buyPrice: product.quick_status.buyPrice,
+        sellPrice: product.quick_status.sellPrice,
+        buyVolume: product.quick_status.buyVolume,
+        sellVolume: product.quick_status.sellVolume
+      };
+    }
+  }
+
+  return JSON.stringify(shardPrices, null, 2);
+}
+
+async function calculateFusionCost(targetAttribute: string): Promise<string> {
+  const data: BazaarResponse = await makeHypixelRequest("/skyblock/bazaar");
+
+  if (!data.success || !data.products) {
+    return "Failed to fetch bazaar data";
+  }
+
+  const attrUpper = targetAttribute.toUpperCase();
+  const fusion = ATTRIBUTE_COMBINATIONS[attrUpper];
+
+  if (!fusion) {
+    return `Unknown attribute: ${targetAttribute}. Available: ${Object.keys(ATTRIBUTE_COMBINATIONS).join(", ")}`;
+  }
+
+  let totalCost = 0;
+  const breakdown: Record<string, any> = {};
+
+  const calculateMaterialCost = (material: string, depth: number = 0): number => {
+    const materialUpper = material.toUpperCase();
+
+    if (materialUpper === "ATTRIBUTE_SHARD") {
+      const product = data.products![materialUpper];
+      if (product) {
+        const cost = product.quick_status.buyPrice;
+        breakdown[materialUpper] = {
+          type: "base_shard",
+          cost: cost,
+          depth: depth
+        };
+        return cost;
+      }
+      return 0;
+    }
+
+    const subFusion = ATTRIBUTE_COMBINATIONS[materialUpper];
+    if (subFusion) {
+      let subCost = 0;
+      const subMaterials: string[] = [];
+
+      for (const subMaterial of subFusion.materials) {
+        const cost = calculateMaterialCost(subMaterial, depth + 1);
+        subCost += cost;
+        subMaterials.push(subMaterial);
+      }
+
+      breakdown[materialUpper] = {
+        type: "fusion",
+        tier: subFusion.tier,
+        materials: subMaterials,
+        cost: subCost,
+        depth: depth
+      };
+
+      return subCost;
+    }
+
+    return 0;
+  };
+
+  for (const material of fusion.materials) {
+    totalCost += calculateMaterialCost(material);
+  }
+
+  return JSON.stringify({
+    attribute: attrUpper,
+    tier: fusion.tier,
+    totalCost: totalCost,
+    breakdown: breakdown,
+    materials: fusion.materials
+  }, null, 2);
+}
+
+async function readSkyShardsData(filename?: string): Promise<string> {
+  try {
+    const filePath = filename
+      ? path.join(SKYSHARDS_DATA_PATH, filename)
+      : path.join(SKYSHARDS_DATA_PATH, "fusion_data.json");
+
+    const fileContent = await fs.readFile(filePath, "utf-8");
+    const jsonData = JSON.parse(fileContent);
+
+    return JSON.stringify({
+      path: filePath,
+      data: jsonData
+    }, null, 2);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return JSON.stringify({
+        error: "SkyShards data file not found",
+        expectedPath: filename
+          ? path.join(SKYSHARDS_DATA_PATH, filename)
+          : path.join(SKYSHARDS_DATA_PATH, "fusion_data.json"),
+        hint: "You can set SKYSHARDS_DATA_PATH environment variable to point to your SkyShards data directory"
+      }, null, 2);
+    }
+
+    throw error;
+  }
+}
+
+async function listAvailableAttributes(): Promise<string> {
+  const attributes = Object.entries(ATTRIBUTE_COMBINATIONS).map(([name, info]) => ({
+    name: name,
+    tier: info.tier,
+    materials: info.materials,
+    materialCount: info.materials.length
+  }));
+
+  attributes.sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
+
+  return JSON.stringify({
+    totalAttributes: attributes.length,
+    attributes: attributes,
+    tiers: {
+      tier1: attributes.filter(a => a.tier === 1),
+      tier2: attributes.filter(a => a.tier === 2),
+      tier3: attributes.filter(a => a.tier === 3)
+    }
+  }, null, 2);
+}
+
 const server = new Server(
   {
     name: "hypixel-skyblock-mcp",
@@ -253,6 +430,57 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "get_shard_prices",
+        description: "Get current Bazaar prices for attribute shards. Can specify specific shard IDs or get all common shards.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            shard_ids: {
+              type: "array",
+              items: {
+                type: "string"
+              },
+              description: "Optional: Array of shard IDs to check (e.g., ['ATTRIBUTE_SHARD', 'SPEED_ARTIFACT'])",
+            },
+          },
+        },
+      },
+      {
+        name: "calculate_fusion_cost",
+        description: "Calculate the total cost to fuse a specific attribute using current Bazaar prices. Returns breakdown of materials needed.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            attribute: {
+              type: "string",
+              description: "The attribute to calculate fusion cost for (e.g., 'SPEED', 'BLAZING_FORTUNE', 'LIFELINE')",
+            },
+          },
+          required: ["attribute"],
+        },
+      },
+      {
+        name: "list_attributes",
+        description: "List all available attributes that can be fused, organized by tier with material requirements.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
+      {
+        name: "read_skyshards_data",
+        description: "Read SkyShards fusion data from local storage. Requires SKYSHARDS_DATA_PATH to be configured.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            filename: {
+              type: "string",
+              description: "Optional: Specific filename to read (default: fusion_data.json)",
+            },
+          },
+        },
+      },
     ] as Tool[],
   };
 });
@@ -290,6 +518,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const playerName = args?.player_name ? String(args.player_name) : undefined;
         const page = args?.page ? Number(args.page) : 0;
         const result = await getActiveAuctions(playerName, page);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_shard_prices": {
+        const shardIds = args?.shard_ids ? (args.shard_ids as string[]) : undefined;
+        const result = await getShardPrices(shardIds);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "calculate_fusion_cost": {
+        const attribute = String(args?.attribute);
+        const result = await calculateFusionCost(attribute);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "list_attributes": {
+        const result = await listAvailableAttributes();
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "read_skyshards_data": {
+        const filename = args?.filename ? String(args.filename) : undefined;
+        const result = await readSkyShardsData(filename);
         return {
           content: [{ type: "text", text: result }],
         };

@@ -49,6 +49,49 @@ Obtém leilões ativos da Auction House.
 - Leilões ativos com detalhes de lance, item e tempo restante
 - Informação de paginação
 
+### 5. `get_shard_prices`
+Obtém preços atuais do Bazaar para shards de atributos.
+
+**Parâmetros:**
+- `shard_ids` (array, opcional): Lista de IDs de shards específicos (ex: ['ATTRIBUTE_SHARD', 'SPEED_ARTIFACT'])
+
+**Retorna:**
+- Preços de compra/venda e volume para cada shard
+- Se não especificado, retorna todos os shards comuns
+
+### 6. `calculate_fusion_cost`
+Calcula o custo total para fundir um atributo específico usando preços atuais do Bazaar.
+
+**Parâmetros:**
+- `attribute` (string, obrigatório): Nome do atributo (ex: 'SPEED', 'BLAZING_FORTUNE', 'LIFELINE')
+
+**Retorna:**
+- Custo total da fusão
+- Breakdown detalhado dos materiais necessários
+- Tier do atributo
+- Árvore de fusão recursiva
+
+### 7. `list_attributes`
+Lista todos os atributos disponíveis para fusão, organizados por tier.
+
+**Parâmetros:**
+- Nenhum
+
+**Retorna:**
+- Lista completa de atributos
+- Materiais necessários para cada atributo
+- Organização por tier (1, 2, 3)
+
+### 8. `read_skyshards_data`
+Lê dados de fusão salvos localmente do SkyShards.
+
+**Parâmetros:**
+- `filename` (string, opcional): Nome do arquivo a ler (padrão: fusion_data.json)
+
+**Retorna:**
+- Dados de fusão salvos
+- Caminho do arquivo lido
+
 ## Instalação
 
 ### 1. Clone o repositório
@@ -114,6 +157,27 @@ Adicione ao seu arquivo de configuração do Claude Desktop (`claude_desktop_con
 
 Substitua `/caminho/completo/para/skyblock` pelo caminho absoluto do diretório do projeto.
 
+### Integração com SkyShards (Opcional)
+
+Para usar a funcionalidade de leitura de dados do SkyShards, configure a variável de ambiente adicional:
+
+```json
+{
+  "mcpServers": {
+    "hypixel-skyblock": {
+      "command": "node",
+      "args": ["/caminho/completo/para/skyblock/build/index.js"],
+      "env": {
+        "HYPIXEL_API_KEY": "sua-api-key-aqui",
+        "SKYSHARDS_DATA_PATH": "/caminho/para/seus/dados/skyshards"
+      }
+    }
+  }
+}
+```
+
+O SkyShards é uma ferramenta web para calcular fusões ótimas de atributos. Se você exportar dados do SkyShards para um arquivo local, este servidor MCP pode lê-los.
+
 ### Desenvolvimento
 
 Para desenvolvimento com recompilação automática:
@@ -126,10 +190,24 @@ npm run dev
 
 Após configurar o servidor MCP no Claude Desktop, você pode usar comandos como:
 
+### Consultas de Jogadores
 - "Quais são as estatísticas do jogador Technoblade?"
 - "Mostre-me os perfis do Skyblock do jogador Dream"
+
+### Economia e Bazaar
 - "Qual é o preço atual de ENCHANTED_DIAMOND no Bazaar?"
+- "Mostre-me os preços dos shards de atributos"
+- "Quanto custa no total para fundir BLAZING_FORTUNE?"
+
+### Leilões
 - "Mostre-me os leilões ativos do jogador xyz"
+- "Quais são os leilões da página 2?"
+
+### Fusão de Atributos (SkyShards)
+- "Liste todos os atributos disponíveis para fusão"
+- "Calcule o custo para fundir LIFELINE"
+- "Quais são os preços atuais de ATTRIBUTE_SHARD?"
+- "Mostre-me a árvore de fusão para DOUBLE_HOOK"
 
 ## Estrutura do Projeto
 
@@ -168,3 +246,5 @@ MIT
 - [Documentação da API do Hypixel](https://api.hypixel.net/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [Hypixel Skyblock Wiki](https://wiki.hypixel.net/Skyblock)
+- [SkyShards - Fusion Calculator](https://skyshards.com/)
+- [SkyShards GitHub](https://github.com/Campionnn/SkyShards)
