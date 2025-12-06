@@ -92,6 +92,68 @@ Lê dados de fusão salvos localmente do SkyShards.
 - Dados de fusão salvos
 - Caminho do arquivo lido
 
+### 9. `get_player_skills`
+Obtém níveis detalhados de skills e XP de um jogador do Skyblock.
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- Níveis de todas as skills (Farming, Mining, Combat, Foraging, Fishing, etc.)
+- XP total e XP para próximo nível
+- Skill average calculada
+
+### 10. `get_player_slayers`
+Obtém estatísticas de slayer bosses de um jogador.
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- XP e níveis de todos os slayers (Zombie, Spider, Wolf, Enderman, Blaze)
+- Total de kills por slayer
+- XP total de slayers
+
+### 11. `get_player_dungeons`
+Obtém estatísticas de dungeons incluindo classes e progresso.
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- Níveis de todas as classes (Healer, Mage, Berserk, Archer, Tank)
+- Progresso de Catacombs (nível, XP, highest floor)
+- Total de secrets encontrados
+- Classe selecionada atualmente
+
+### 12. `find_bazaar_flips`
+Encontra oportunidades de lucro no Bazaar analisando diferenças entre preços de compra e venda.
+
+**Parâmetros:**
+- `min_profit` (number, opcional): Lucro mínimo em coins (padrão: 100000)
+- `min_volume` (number, opcional): Volume mínimo de transações (padrão: 1000)
+
+**Retorna:**
+- Top 20 melhores flips ordenados por lucro
+- Preço de compra, venda, lucro e % de lucro
+- Volume de compra/venda para cada item
+
+### 13. `calculate_networth`
+Calcula o networth básico de um jogador (purse + bank).
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- Coins na purse
+- Coins no bank
+- Total de liquid coins
+- Nota: Análise completa de inventário em desenvolvimento
+
 ## Instalação
 
 ### 1. Clone o repositório
@@ -208,6 +270,31 @@ Após configurar o servidor MCP no Claude Desktop, você pode usar comandos como
 - "Calcule o custo para fundir LIFELINE"
 - "Quais são os preços atuais de ATTRIBUTE_SHARD?"
 - "Mostre-me a árvore de fusão para DOUBLE_HOOK"
+
+### Skills & Progressão
+- "Quais são os níveis de skills do jogador Technoblade?"
+- "Mostre-me a skill average do jogador xyz"
+- "Quanto XP falta para o próximo nível de mining?"
+
+### Slayers
+- "Quais são as estatísticas de slayers do jogador Dream?"
+- "Quantos zombie slayers o jogador xyz matou?"
+- "Qual é o XP total de slayers?"
+
+### Dungeons
+- "Mostre as estatísticas de dungeons do jogador xyz"
+- "Qual é o nível de catacombs?"
+- "Quantos secrets o jogador encontrou?"
+- "Quais são os níveis das classes de dungeon?"
+
+### Economia & Lucro
+- "Encontre os melhores flips no Bazaar agora"
+- "Mostre flips com lucro mínimo de 500k"
+- "Quais itens têm maior margem de lucro?"
+
+### Networth
+- "Calcule o networth do jogador xyz"
+- "Quanto dinheiro o jogador tem no total?"
 
 ## Estrutura do Projeto
 

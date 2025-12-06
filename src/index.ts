@@ -357,6 +357,309 @@ async function listAvailableAttributes(): Promise<string> {
   }, null, 2);
 }
 
+// Skills & Levels functions
+const SKILL_NAMES = ["farming", "mining", "combat", "foraging", "fishing", "enchanting", "alchemy", "taming", "dungeoneering", "carpentry", "runecrafting", "social"];
+
+function calculateSkillLevel(exp: number, skillName: string): { level: number; currentExp: number; expToNext: number } {
+  const levels = skillName === "runecrafting" ? 25 : skillName === "social" ? 25 : 50;
+
+  const XP_TABLE = [
+    50, 125, 200, 300, 500, 750, 1000, 1500, 2000, 3500,
+    5000, 7500, 10000, 15000, 20000, 30000, 50000, 75000, 100000, 200000,
+    300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1100000, 1200000,
+    1300000, 1400000, 1500000, 1600000, 1700000, 1800000, 1900000, 2000000, 2100000, 2200000,
+    2300000, 2400000, 2500000, 2600000, 2750000, 2900000, 3100000, 3400000, 3700000, 4000000
+  ];
+
+  let totalExp = 0;
+  let level = 0;
+
+  for (let i = 0; i < Math.min(levels, XP_TABLE.length); i++) {
+    if (exp >= totalExp + XP_TABLE[i]) {
+      totalExp += XP_TABLE[i];
+      level = i + 1;
+    } else {
+      break;
+    }
+  }
+
+  const currentLevelExp = exp - totalExp;
+  const expToNext = level < levels ? XP_TABLE[level] - currentLevelExp : 0;
+
+  return { level, currentExp: currentLevelExp, expToNext };
+}
+
+async function getPlayerSkills(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member) {
+    return `Member data not found in profile`;
+  }
+
+  const skills: Record<string, any> = {};
+  let skillAverage = 0;
+  let skillCount = 0;
+
+  for (const skillName of SKILL_NAMES) {
+    const expKey = `experience_skill_${skillName}`;
+    const exp = member[expKey] || 0;
+
+    if (exp > 0 && skillName !== "runecrafting" && skillName !== "social" && skillName !== "carpentry") {
+      const skillInfo = calculateSkillLevel(exp, skillName);
+      skills[skillName] = {
+        level: skillInfo.level,
+        exp: exp,
+        currentLevelExp: skillInfo.currentExp,
+        expToNextLevel: skillInfo.expToNext
+      };
+      skillAverage += skillInfo.level;
+      skillCount++;
+    } else if (exp > 0) {
+      const skillInfo = calculateSkillLevel(exp, skillName);
+      skills[skillName] = {
+        level: skillInfo.level,
+        exp: exp
+      };
+    }
+  }
+
+  const avgSkillLevel = skillCount > 0 ? skillAverage / skillCount : 0;
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    skills: skills,
+    skillAverage: Math.round(avgSkillLevel * 100) / 100,
+    totalSkillExp: Object.values(skills).reduce((sum: number, s: any) => sum + (s.exp || 0), 0)
+  }, null, 2);
+}
+
+// Slayer functions
+async function getPlayerSlayers(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member || !member.slayer_bosses) {
+    return JSON.stringify({
+      username: username,
+      profile: profile.cute_name,
+      slayers: {},
+      totalSlayerExp: 0
+    }, null, 2);
+  }
+
+  const slayers: Record<string, any> = {};
+  let totalExp = 0;
+
+  for (const [slayerType, data] of Object.entries(member.slayer_bosses)) {
+    const slayerData = data as any;
+    const exp = slayerData.xp || 0;
+    totalExp += exp;
+
+    slayers[slayerType] = {
+      exp: exp,
+      level: Math.floor(exp / 5000),
+      kills: slayerData.boss_kills_tier_0 + slayerData.boss_kills_tier_1 +
+             slayerData.boss_kills_tier_2 + slayerData.boss_kills_tier_3 +
+             (slayerData.boss_kills_tier_4 || 0)
+    };
+  }
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    slayers: slayers,
+    totalSlayerExp: totalExp
+  }, null, 2);
+}
+
+// Dungeons functions
+async function getPlayerDungeons(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member || !member.dungeons) {
+    return JSON.stringify({
+      username: username,
+      profile: profile.cute_name,
+      dungeons: { enabled: false }
+    }, null, 2);
+  }
+
+  const dungeonData = member.dungeons;
+  const classes: Record<string, any> = {};
+
+  if (dungeonData.player_classes) {
+    for (const [className, classData] of Object.entries(dungeonData.player_classes)) {
+      const data = classData as any;
+      classes[className] = {
+        exp: data.experience || 0,
+        level: Math.floor((data.experience || 0) / 50000)
+      };
+    }
+  }
+
+  const catacombs = dungeonData.dungeon_types?.catacombs || {};
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    selectedClass: dungeonData.selected_dungeon_class || "none",
+    classes: classes,
+    catacombs: {
+      level: catacombs.level || 0,
+      exp: catacombs.experience || 0,
+      highestFloor: catacombs.highest_tier_completed || 0
+    },
+    secrets: dungeonData.secrets_found || 0
+  }, null, 2);
+}
+
+// Bazaar Flip Finder
+async function findBazaarFlips(minProfit: number = 100000, minVolume: number = 1000): Promise<string> {
+  const data: BazaarResponse = await makeHypixelRequest("/skyblock/bazaar");
+
+  if (!data.success || !data.products) {
+    return "Failed to fetch bazaar data";
+  }
+
+  const flips: Array<{
+    item: string;
+    buyPrice: number;
+    sellPrice: number;
+    profit: number;
+    profitPercent: number;
+    buyVolume: number;
+    sellVolume: number;
+  }> = [];
+
+  for (const [itemId, product] of Object.entries(data.products)) {
+    const buyPrice = product.quick_status.buyPrice;
+    const sellPrice = product.quick_status.sellPrice;
+    const buyVolume = product.quick_status.buyVolume;
+    const sellVolume = product.quick_status.sellVolume;
+
+    if (buyPrice > 0 && sellPrice > 0 && buyVolume >= minVolume && sellVolume >= minVolume) {
+      const profit = sellPrice - buyPrice;
+      const profitPercent = (profit / buyPrice) * 100;
+
+      if (profit >= minProfit) {
+        flips.push({
+          item: itemId,
+          buyPrice: Math.round(buyPrice),
+          sellPrice: Math.round(sellPrice),
+          profit: Math.round(profit),
+          profitPercent: Math.round(profitPercent * 100) / 100,
+          buyVolume: Math.round(buyVolume),
+          sellVolume: Math.round(sellVolume)
+        });
+      }
+    }
+  }
+
+  flips.sort((a, b) => b.profit - a.profit);
+
+  return JSON.stringify({
+    totalFlipsFound: flips.length,
+    filters: {
+      minProfit: minProfit,
+      minVolume: minVolume
+    },
+    topFlips: flips.slice(0, 20)
+  }, null, 2);
+}
+
+// Networth Calculator (basic)
+async function calculateNetworth(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member) {
+    return `Member data not found in profile`;
+  }
+
+  const purse = member.coin_purse || 0;
+  const bank = profile.banking?.balance || 0;
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    purse: Math.round(purse),
+    bank: Math.round(bank),
+    liquidCoins: Math.round(purse + bank),
+    note: "Full networth calculation requires inventory analysis (not yet implemented)"
+  }, null, 2);
+}
+
 const server = new Server(
   {
     name: "hypixel-skyblock-mcp",
@@ -481,6 +784,95 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "get_player_skills",
+        description: "Get detailed skill levels and XP for a Skyblock player. Returns all skills with levels, current XP, and skill average.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name (e.g., 'Coconut', 'Apple'). Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "get_player_slayers",
+        description: "Get slayer boss statistics for a player. Returns XP, levels, and kills for all slayer types (zombie, spider, wolf, enderman, blaze).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name. Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "get_player_dungeons",
+        description: "Get dungeon statistics including class levels, catacombs progress, and secrets found.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name. Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "find_bazaar_flips",
+        description: "Find profitable items to flip in the Bazaar. Analyzes buy/sell prices and finds best opportunities for profit.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            min_profit: {
+              type: "number",
+              description: "Optional: Minimum profit in coins (default: 100000)",
+            },
+            min_volume: {
+              type: "number",
+              description: "Optional: Minimum buy/sell volume (default: 1000)",
+            },
+          },
+        },
+      },
+      {
+        name: "calculate_networth",
+        description: "Calculate basic networth for a player (purse + bank). Full inventory analysis coming soon.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name. Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
     ] as Tool[],
   };
 });
@@ -549,6 +941,51 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "read_skyshards_data": {
         const filename = args?.filename ? String(args.filename) : undefined;
         const result = await readSkyShardsData(filename);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_player_skills": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await getPlayerSkills(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_player_slayers": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await getPlayerSlayers(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_player_dungeons": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await getPlayerDungeons(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "find_bazaar_flips": {
+        const minProfit = args?.min_profit ? Number(args.min_profit) : 100000;
+        const minVolume = args?.min_volume ? Number(args.min_volume) : 1000;
+        const result = await findBazaarFlips(minProfit, minVolume);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "calculate_networth": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await calculateNetworth(username, profileName);
         return {
           content: [{ type: "text", text: result }],
         };
