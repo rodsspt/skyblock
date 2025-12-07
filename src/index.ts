@@ -183,30 +183,184 @@ async function getActiveAuctions(playerName?: string, page: number = 0): Promise
   }, null, 2);
 }
 
-// SkyShards related functions
+// SkyShards related functions - COMPLETE ATTRIBUTE SYSTEM
 const ATTRIBUTE_SHARDS = [
+  // Base Shards
   "ATTRIBUTE_SHARD",
-  "SPEED_ARTIFACT",
-  "MANA_POOL_ARTIFACT",
-  "VITALITY_ARTIFACT",
-  "LIFELINE_ARTIFACT",
-  "MANA_REGENERATION_ARTIFACT",
-  "BLAZING_FORTUNE_ARTIFACT",
-  "FISHING_EXPERIENCE_ARTIFACT",
-  "DOUBLE_HOOK_ARTIFACT",
-  "TROPHY_HUNTER_ARTIFACT"
+
+  // Common Tier Shards
+  "NATURE_ELEMENTAL", "FOG_ELEMENTAL", "LIGHT_ELEMENTAL",
+  "NOCTURNAL_ANIMAL", "CHEAPSTAKE", "MOONGLADE_MASTERY",
+  "FISHERMAN", "EXPERIENCE", "MOSSY_BOX",
+  "FOREST_FISHING", "SKELETAL_RULER", "CREATURE_FISHER",
+  "ARTHROPOD_RESISTANCE", "HAPPY_BOX", "YUMMY",
+  "UNDEAD_RESISTANCE", "FIG_SHARPENING", "UNITY_IS_STRENGTH",
+  "ENDER_RESISTANCE", "BUCKET_LOVER", "TREE_LURKER",
+  "VISITOR_BAIT", "MIDAS_TOUCH", "FOREST_STRENGTH",
+  "BLAZING_RESISTANCE", "YOG_MEMBRANE", "OWL_FRIEND",
+  "DECENT_KARMA", "ROTTEN_PICKAXE", "MYTHOLOGICAL_RESISTANCE",
+
+  // Uncommon Tier Shards
+  "WOOD_ELEMENTAL", "WATER_ELEMENTAL", "STONE_ELEMENTAL",
+  "FIG_COLLECTOR", "GOLD_BAIT", "MOUNTAIN_CLIMBER",
+  "BIGGER_BOX", "GOOD_KARMA", "ECHO_OF_BOXES",
+  "PEST_LUCK", "FOREST_TRAP", "MANA_STEAL",
+  "DRAGON_SHORTBOW_IMPROVEMENT", "MANGROVE_SHARPENING", "SPEED",
+  "LOST_AND_FOUND", "HUNTERS_FANG", "INSECT_POWER",
+  "UNDEAD_RULER", "STRONG_ARMS", "LIFE_RECOVERY",
+  "MANGROVE_COLLECTOR", "SPIRIT_AXE", "COMBO",
+  "STRONG_LEGS", "INFECTION", "ARTHROPOD_RULER",
+  "KATS_FAVORITE", "ENDER_RULER", "MAGMATIC_RULER",
+  "BATTLE_FROG", "INFILTRATION",
+
+  // Rare Tier Shards
+  "FOREST_ELEMENTAL", "TORRENT_ELEMENTAL", "LIGHTNING_ELEMENTAL",
+  "ANIMAL_EXPERTISE", "FROG_LEGS", "ESSENCE_OF_ICE",
+  "BEACON_ZEALOT", "GREAT_KARMA",
+
+  // Gear/Stats Shards
+  "MANA_POOL", "VITALITY", "DEFENSE",
+  "HEALTH", "TRUE_DEFENSE", "FEROCITY",
+  "ATTACK_SPEED", "SWING_RANGE", "BREEZE",
+  "LIFELINE", "MANA_REGENERATION", "BLAZING_FORTUNE",
+  "FISHING_EXPERIENCE", "DOUBLE_HOOK", "TROPHY_HUNTER",
+  "DOMINANCE", "VETERAN", "CHAMPION",
+  "FORTITUDE", "MAGIC_FIND", "ARACHNO",
+  "ARACHNO_RESISTANCE", "BLAZE", "BLAZE_RESISTANCE",
+  "UNDEAD", "ENDER", "SPEED_ARTIFACT",
+  "MANA_POOL_ARTIFACT", "VITALITY_ARTIFACT",
+  "LIFELINE_ARTIFACT", "MANA_REGENERATION_ARTIFACT",
+  "BLAZING_FORTUNE_ARTIFACT", "FISHING_EXPERIENCE_ARTIFACT",
+  "DOUBLE_HOOK_ARTIFACT", "TROPHY_HUNTER_ARTIFACT"
 ];
 
-const ATTRIBUTE_COMBINATIONS: Record<string, { tier: number; materials: string[] }> = {
-  "SPEED": { tier: 1, materials: ["ATTRIBUTE_SHARD"] },
-  "MANA_POOL": { tier: 1, materials: ["ATTRIBUTE_SHARD"] },
-  "VITALITY": { tier: 1, materials: ["ATTRIBUTE_SHARD"] },
-  "LIFELINE": { tier: 2, materials: ["SPEED", "VITALITY"] },
-  "MANA_REGENERATION": { tier: 2, materials: ["SPEED", "MANA_POOL"] },
-  "BLAZING_FORTUNE": { tier: 3, materials: ["SPEED", "MANA_POOL", "VITALITY"] },
-  "FISHING_EXPERIENCE": { tier: 2, materials: ["MANA_POOL", "VITALITY"] },
-  "DOUBLE_HOOK": { tier: 3, materials: ["FISHING_EXPERIENCE", "SPEED"] },
-  "TROPHY_HUNTER": { tier: 3, materials: ["FISHING_EXPERIENCE", "VITALITY"] }
+// Complete attribute combinations with tiers and fusion requirements
+const ATTRIBUTE_COMBINATIONS: Record<string, { tier: number; materials: string[]; category?: string }> = {
+  // Tier 1 - Base Stats
+  "SPEED": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "MANA_POOL": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "VITALITY": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "DEFENSE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "HEALTH": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "TRUE_DEFENSE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "FEROCITY": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "ATTACK_SPEED": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "SWING_RANGE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+  "BREEZE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "stats" },
+
+  // Tier 2 - Basic Combinations
+  "LIFELINE": { tier: 2, materials: ["SPEED", "VITALITY"], category: "combined" },
+  "MANA_REGENERATION": { tier: 2, materials: ["SPEED", "MANA_POOL"], category: "combined" },
+  "FISHING_EXPERIENCE": { tier: 2, materials: ["MANA_POOL", "VITALITY"], category: "combined" },
+  "DOMINANCE": { tier: 2, materials: ["FEROCITY", "HEALTH"], category: "combined" },
+  "VETERAN": { tier: 2, materials: ["DEFENSE", "SPEED"], category: "combined" },
+  "FORTITUDE": { tier: 2, materials: ["HEALTH", "DEFENSE"], category: "combined" },
+
+  // Tier 3 - Advanced Combinations
+  "BLAZING_FORTUNE": { tier: 3, materials: ["SPEED", "MANA_POOL", "VITALITY"], category: "advanced" },
+  "DOUBLE_HOOK": { tier: 3, materials: ["FISHING_EXPERIENCE", "SPEED"], category: "advanced" },
+  "TROPHY_HUNTER": { tier: 3, materials: ["FISHING_EXPERIENCE", "VITALITY"], category: "advanced" },
+  "CHAMPION": { tier: 3, materials: ["DOMINANCE", "DEFENSE"], category: "advanced" },
+  "MAGIC_FIND": { tier: 3, materials: ["BREEZE", "MANA_POOL", "VITALITY"], category: "advanced" },
+
+  // Combat Attributes
+  "ARACHNO": { tier: 2, materials: ["ATTACK_SPEED", "FEROCITY"], category: "combat" },
+  "ARACHNO_RESISTANCE": { tier: 2, materials: ["DEFENSE", "VITALITY"], category: "combat" },
+  "BLAZE": { tier: 2, materials: ["ATTACK_SPEED", "VITALITY"], category: "combat" },
+  "BLAZE_RESISTANCE": { tier: 2, materials: ["TRUE_DEFENSE", "HEALTH"], category: "combat" },
+  "UNDEAD": { tier: 2, materials: ["FEROCITY", "VITALITY"], category: "combat" },
+  "ENDER": { tier: 2, materials: ["HEALTH", "MANA_POOL"], category: "combat" },
+
+  // Elemental Attributes - Common
+  "NATURE_ELEMENTAL": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "elemental" },
+  "FOG_ELEMENTAL": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "elemental" },
+  "LIGHT_ELEMENTAL": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "elemental" },
+
+  // Elemental Attributes - Uncommon
+  "WOOD_ELEMENTAL": { tier: 2, materials: ["NATURE_ELEMENTAL", "ATTRIBUTE_SHARD"], category: "elemental" },
+  "WATER_ELEMENTAL": { tier: 2, materials: ["FOG_ELEMENTAL", "ATTRIBUTE_SHARD"], category: "elemental" },
+  "STONE_ELEMENTAL": { tier: 2, materials: ["LIGHT_ELEMENTAL", "ATTRIBUTE_SHARD"], category: "elemental" },
+
+  // Elemental Attributes - Rare
+  "FOREST_ELEMENTAL": { tier: 3, materials: ["WOOD_ELEMENTAL", "NATURE_ELEMENTAL"], category: "elemental" },
+  "TORRENT_ELEMENTAL": { tier: 3, materials: ["WATER_ELEMENTAL", "FOG_ELEMENTAL"], category: "elemental" },
+  "LIGHTNING_ELEMENTAL": { tier: 3, materials: ["STONE_ELEMENTAL", "LIGHT_ELEMENTAL"], category: "elemental" },
+
+  // Special/Utility Attributes
+  "MOONGLADE_MASTERY": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "utility" },
+  "FISHERMAN": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "utility" },
+  "EXPERIENCE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "utility" },
+  "MIDAS_TOUCH": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "utility" },
+  "MANA_STEAL": { tier: 2, materials: ["MANA_POOL", "ATTACK_SPEED"], category: "utility" },
+  "LIFE_RECOVERY": { tier: 2, materials: ["HEALTH", "MANA_REGENERATION"], category: "utility" },
+  "COMBO": { tier: 2, materials: ["ATTACK_SPEED", "FEROCITY"], category: "utility" },
+
+  // Resistance Attributes
+  "ARTHROPOD_RESISTANCE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "resistance" },
+  "UNDEAD_RESISTANCE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "resistance" },
+  "ENDER_RESISTANCE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "resistance" },
+  "BLAZING_RESISTANCE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "resistance" },
+  "MYTHOLOGICAL_RESISTANCE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "resistance" },
+
+  // Ruler Attributes
+  "SKELETAL_RULER": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "ruler" },
+  "UNDEAD_RULER": { tier: 2, materials: ["UNDEAD_RESISTANCE", "HEALTH"], category: "ruler" },
+  "ARTHROPOD_RULER": { tier: 2, materials: ["ARTHROPOD_RESISTANCE", "ATTACK_SPEED"], category: "ruler" },
+  "ENDER_RULER": { tier: 2, materials: ["ENDER_RESISTANCE", "MANA_POOL"], category: "ruler" },
+  "MAGMATIC_RULER": { tier: 2, materials: ["BLAZING_RESISTANCE", "FEROCITY"], category: "ruler" },
+
+  // Animal/Creature Attributes
+  "NOCTURNAL_ANIMAL": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "creature" },
+  "CREATURE_FISHER": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "creature" },
+  "OWL_FRIEND": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "creature" },
+  "ANIMAL_EXPERTISE": { tier: 3, materials: ["NOCTURNAL_ANIMAL", "OWL_FRIEND", "SPEED"], category: "creature" },
+  "BATTLE_FROG": { tier: 2, materials: ["FEROCITY", "HEALTH"], category: "creature" },
+  "FROG_LEGS": { tier: 3, materials: ["BATTLE_FROG", "SPEED"], category: "creature" },
+
+  // Karma Attributes
+  "DECENT_KARMA": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "karma" },
+  "GOOD_KARMA": { tier: 2, materials: ["DECENT_KARMA", "MANA_POOL"], category: "karma" },
+  "GREAT_KARMA": { tier: 3, materials: ["GOOD_KARMA", "DECENT_KARMA"], category: "karma" },
+
+  // Box/Storage Attributes
+  "HAPPY_BOX": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "storage" },
+  "MOSSY_BOX": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "storage" },
+  "BIGGER_BOX": { tier: 2, materials: ["HAPPY_BOX", "MOSSY_BOX"], category: "storage" },
+  "ECHO_OF_BOXES": { tier: 2, materials: ["HAPPY_BOX", "BIGGER_BOX"], category: "storage" },
+
+  // Gathering/Collection Attributes
+  "FIG_SHARPENING": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "gathering" },
+  "FIG_COLLECTOR": { tier: 2, materials: ["FIG_SHARPENING", "EXPERIENCE"], category: "gathering" },
+  "MANGROVE_SHARPENING": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "gathering" },
+  "MANGROVE_COLLECTOR": { tier: 2, materials: ["MANGROVE_SHARPENING", "EXPERIENCE"], category: "gathering" },
+  "FOREST_FISHING": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "gathering" },
+  "FOREST_TRAP": { tier: 2, materials: ["FOREST_FISHING", "SPEED"], category: "gathering" },
+  "FOREST_STRENGTH": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "gathering" },
+
+  // Miscellaneous Special Attributes
+  "PEST_LUCK": { tier: 2, materials: ["MAGIC_FIND", "SPEED"], category: "special" },
+  "LOST_AND_FOUND": { tier: 2, materials: ["MAGIC_FIND", "FISHING_EXPERIENCE"], category: "special" },
+  "HUNTERS_FANG": { tier: 2, materials: ["FEROCITY", "ATTACK_SPEED"], category: "special" },
+  "INSECT_POWER": { tier: 2, materials: ["ARTHROPOD_RESISTANCE", "FEROCITY"], category: "special" },
+  "STRONG_ARMS": { tier: 2, materials: ["ATTACK_SPEED", "HEALTH"], category: "special" },
+  "STRONG_LEGS": { tier: 2, materials: ["SPEED", "HEALTH"], category: "special" },
+  "SPIRIT_AXE": { tier: 2, materials: ["ATTACK_SPEED", "MANA_POOL"], category: "special" },
+  "INFECTION": { tier: 2, materials: ["HEALTH", "UNDEAD"], category: "special" },
+  "KATS_FAVORITE": { tier: 2, materials: ["SPEED", "MANA_POOL"], category: "special" },
+  "INFILTRATION": { tier: 2, materials: ["SPEED", "VITALITY"], category: "special" },
+  "MOUNTAIN_CLIMBER": { tier: 2, materials: ["DEFENSE", "SPEED"], category: "special" },
+  "GOLD_BAIT": { tier: 2, materials: ["MIDAS_TOUCH", "FISHING_EXPERIENCE"], category: "special" },
+  "DRAGON_SHORTBOW_IMPROVEMENT": { tier: 2, materials: ["ATTACK_SPEED", "FEROCITY"], category: "special" },
+  "UNITY_IS_STRENGTH": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "special" },
+  "BUCKET_LOVER": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "special" },
+  "TREE_LURKER": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "special" },
+  "VISITOR_BAIT": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "special" },
+  "YUMMY": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "special" },
+  "ROTTEN_PICKAXE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "special" },
+  "YOG_MEMBRANE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "special" },
+  "CHEAPSTAKE": { tier: 1, materials: ["ATTRIBUTE_SHARD"], category: "special" },
+  "ESSENCE_OF_ICE": { tier: 3, materials: ["WATER_ELEMENTAL", "MANA_POOL", "VITALITY"], category: "special" },
+  "BEACON_ZEALOT": { tier: 3, materials: ["MOONGLADE_MASTERY", "SPEED", "MANA_POOL"], category: "special" }
 };
 
 async function getShardPrices(shardIds?: string[]): Promise<string> {
@@ -341,18 +495,48 @@ async function listAvailableAttributes(): Promise<string> {
     name: name,
     tier: info.tier,
     materials: info.materials,
-    materialCount: info.materials.length
+    materialCount: info.materials.length,
+    category: info.category || "uncategorized"
   }));
 
   attributes.sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
 
+  // Group by category
+  const byCategory: Record<string, any[]> = {};
+  attributes.forEach(attr => {
+    if (!byCategory[attr.category]) {
+      byCategory[attr.category] = [];
+    }
+    byCategory[attr.category].push(attr);
+  });
+
   return JSON.stringify({
     totalAttributes: attributes.length,
-    attributes: attributes,
-    tiers: {
-      tier1: attributes.filter(a => a.tier === 1),
-      tier2: attributes.filter(a => a.tier === 2),
-      tier3: attributes.filter(a => a.tier === 3)
+    totalShards: ATTRIBUTE_SHARDS.length,
+    byTier: {
+      tier1: attributes.filter(a => a.tier === 1).length,
+      tier2: attributes.filter(a => a.tier === 2).length,
+      tier3: attributes.filter(a => a.tier === 3).length
+    },
+    byCategory: Object.keys(byCategory).map(cat => ({
+      category: cat,
+      count: byCategory[cat].length,
+      attributes: byCategory[cat].map(a => a.name)
+    })),
+    categories: {
+      stats: attributes.filter(a => a.category === "stats"),
+      combat: attributes.filter(a => a.category === "combat"),
+      elemental: attributes.filter(a => a.category === "elemental"),
+      utility: attributes.filter(a => a.category === "utility"),
+      resistance: attributes.filter(a => a.category === "resistance"),
+      ruler: attributes.filter(a => a.category === "ruler"),
+      creature: attributes.filter(a => a.category === "creature"),
+      karma: attributes.filter(a => a.category === "karma"),
+      storage: attributes.filter(a => a.category === "storage"),
+      gathering: attributes.filter(a => a.category === "gathering"),
+      special: attributes.filter(a => a.category === "special"),
+      combined: attributes.filter(a => a.category === "combined"),
+      advanced: attributes.filter(a => a.category === "advanced")
     }
   }, null, 2);
 }

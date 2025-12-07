@@ -72,15 +72,29 @@ Calcula o custo total para fundir um atributo específico usando preços atuais 
 - Árvore de fusão recursiva
 
 ### 7. `list_attributes`
-Lista todos os atributos disponíveis para fusão, organizados por tier.
+Lista TODOS os atributos disponíveis para fusão (**100+ atributos!**)
 
 **Parâmetros:**
 - Nenhum
 
 **Retorna:**
-- Lista completa de atributos
-- Materiais necessários para cada atributo
+- **Total de atributos: 100+**
+- **Total de shards: 100+**
 - Organização por tier (1, 2, 3)
+- Organização por 13 categorias:
+  - **Stats**: Speed, Mana Pool, Vitality, Defense, Health, etc.
+  - **Combat**: Arachno, Blaze, Undead, Ender, etc.
+  - **Elemental**: Nature, Fog, Light, Forest, Torrent, Lightning
+  - **Utility**: Fisherman, Experience, Midas Touch, Mana Steal, etc.
+  - **Resistance**: Arthropod, Undead, Ender, Blazing, Mythological
+  - **Ruler**: Skeletal, Undead, Arthropod, Ender, Magmatic
+  - **Creature**: Nocturnal Animal, Owl Friend, Battle Frog, Animal Expertise
+  - **Karma**: Decent, Good, Great Karma
+  - **Storage**: Happy Box, Mossy Box, Bigger Box, Echo of Boxes
+  - **Gathering**: Fig, Mangrove, Forest Fishing, Forest Trap
+  - **Special**: 30+ atributos especiais únicos
+  - **Combined**: Lifeline, Mana Regeneration, Fishing Experience, etc.
+  - **Advanced**: Blazing Fortune, Magic Find, Champion, etc.
 
 ### 8. `read_skyshards_data`
 Lê dados de fusão salvos localmente do SkyShards.
