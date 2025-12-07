@@ -1,8 +1,8 @@
 # Hypixel Skyblock MCP Server
 
-Um servidor MCP (Model Context Protocol) para integração com a API do Hypixel Skyblock, permitindo acesso fácil a dados de jogadores, perfis, bazaar e leilões.
+Um servidor MCP (Model Context Protocol) COMPLETO para integração com a API do Hypixel Skyblock. Com **21 ferramentas poderosas**, este é o servidor MCP mais abrangente para Hypixel Skyblock!
 
-## Funcionalidades
+## 🎯 Funcionalidades - 21 Ferramentas Disponíveis
 
 Este servidor MCP fornece as seguintes ferramentas:
 
@@ -154,6 +154,106 @@ Calcula o networth básico de um jogador (purse + bank).
 - Total de liquid coins
 - Nota: Análise completa de inventário em desenvolvimento
 
+### 14. `get_player_collections`
+Obtém estatísticas de coleções de um jogador.
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- Todas as coleções organizadas por categoria (Farming, Mining, Combat, Foraging, Fishing)
+- Top 10 coleções com maior progresso
+- Total de coleções desbloqueadas
+
+### 15. `get_player_pets`
+Obtém todos os pets de um jogador.
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- Lista de todos os pets (tipo, raridade, nível, XP)
+- Pets por raridade (Common, Uncommon, Rare, Epic, Legendary, Mythic)
+- Pet ativo atual
+- Items segurados pelos pets
+
+### 16. `get_fairy_souls`
+Obtém progresso de coleta de Fairy Souls.
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- Total de fairy souls coletadas
+- Fairy souls faltantes
+- % de conclusão
+- Máximo possível (247 souls)
+
+### 17. `get_jacobs_data`
+Obtém estatísticas de Jacob's Farming Contests.
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- Medals ganhos (Gold, Silver, Bronze)
+- Total de medals
+- Perks desbloqueados
+- Número de contests participados
+
+### 18. `get_museum_data`
+Obtém progresso de doações do Museum.
+
+**Parâmetros:**
+- `username` (string, obrigatório): Nome de usuário do Minecraft
+- `profile_name` (string, opcional): Nome do perfil específico
+
+**Retorna:**
+- Items doados ao museum
+- Valor total do museum
+- Lista de items específicos
+
+### 19. `get_guild_stats`
+Obtém estatísticas de uma guild por nome.
+
+**Parâmetros:**
+- `guild_name` (string, obrigatório): Nome da guild
+
+**Retorna:**
+- Nome e tag da guild
+- Level e XP
+- Número de membros
+- Data de criação
+- Descrição e jogos preferidos
+
+### 20. `calculate_minion_profit`
+Calcula lucro estimado para um tipo de minion.
+
+**Parâmetros:**
+- `minion_type` (string, obrigatório): Tipo do minion (ex: 'WHEAT', 'DIAMOND', 'COBBLESTONE')
+- `tier` (number, opcional): Tier do minion (1-12, padrão: 11)
+
+**Retorna:**
+- Items produzidos por hora
+- Lucro por hora/dia/semana
+- Estimativas baseadas em taxas de produção
+
+### 21. `compare_item_prices`
+Compara preços de compra e venda no Bazaar.
+
+**Parâmetros:**
+- `item_id` (string, obrigatório): ID do item para comparar
+
+**Retorna:**
+- Preços de buy e sell
+- Spread de preço
+- % de spread
+- Recomendação de flip
+
 ## Instalação
 
 ### 1. Clone o repositório
@@ -295,6 +395,44 @@ Após configurar o servidor MCP no Claude Desktop, você pode usar comandos como
 ### Networth
 - "Calcule o networth do jogador xyz"
 - "Quanto dinheiro o jogador tem no total?"
+
+### Collections
+- "Mostre as coleções do jogador xyz"
+- "Quais são as top coleções de farming?"
+- "Quantas coleções diferentes o jogador tem?"
+
+### Pets
+- "Liste todos os pets do jogador xyz"
+- "Qual é o pet ativo do jogador?"
+- "Quantos pets legendários o jogador tem?"
+
+### Fairy Souls
+- "Quantas fairy souls o jogador coletou?"
+- "Quantas fairy souls faltam?"
+- "Qual é a % de conclusão de fairy souls?"
+
+### Jacob's Contests
+- "Mostre as estatísticas de Jacob do jogador xyz"
+- "Quantas medals o jogador ganhou?"
+- "Quais perks de farming estão desbloqueados?"
+
+### Museum
+- "Mostre o progresso do museum do jogador xyz"
+- "Quantos items foram doados ao museum?"
+
+### Guilds
+- "Mostre estatísticas da guild 'Example Guild'"
+- "Quantos membros a guild tem?"
+- "Qual é o level da guild?"
+
+### Minions
+- "Calcule o lucro de um wheat minion tier 11"
+- "Quanto lucro faz um diamond minion por dia?"
+- "Compare lucro de diferentes minions"
+
+### Comparação de Preços
+- "Compare preços de ENCHANTED_DIAMOND"
+- "Qual é o spread de preço de WHEAT?"
 
 ## Estrutura do Projeto
 

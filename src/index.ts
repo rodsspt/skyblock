@@ -660,6 +660,344 @@ async function calculateNetworth(username: string, profileName?: string): Promis
   }, null, 2);
 }
 
+// Collections System
+async function getPlayerCollections(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member) {
+    return `Member data not found in profile`;
+  }
+
+  const collections = member.collection || {};
+  const collectionsByCategory: Record<string, any> = {
+    farming: {},
+    mining: {},
+    combat: {},
+    foraging: {},
+    fishing: {}
+  };
+
+  for (const [itemId, amount] of Object.entries(collections)) {
+    const item = String(itemId);
+    const value = Number(amount);
+
+    if (item.includes("WHEAT") || item.includes("CARROT") || item.includes("POTATO") || item.includes("PUMPKIN") || item.includes("MELON") || item.includes("MUSHROOM") || item.includes("CACTUS") || item.includes("SUGAR")) {
+      collectionsByCategory.farming[item] = value;
+    } else if (item.includes("COBBLESTONE") || item.includes("COAL") || item.includes("IRON") || item.includes("GOLD") || item.includes("DIAMOND") || item.includes("LAPIS") || item.includes("EMERALD") || item.includes("REDSTONE") || item.includes("QUARTZ") || item.includes("OBSIDIAN") || item.includes("GLOWSTONE") || item.includes("GRAVEL") || item.includes("SAND") || item.includes("NETHERRACK")) {
+      collectionsByCategory.mining[item] = value;
+    } else if (item.includes("ROTTEN") || item.includes("BONE") || item.includes("STRING") || item.includes("SPIDER") || item.includes("SLIME") || item.includes("GUNPOWDER") || item.includes("ENDER") || item.includes("GHAST") || item.includes("BLAZE") || item.includes("MAGMA")) {
+      collectionsByCategory.combat[item] = value;
+    } else if (item.includes("LOG") || item.includes("WOOD")) {
+      collectionsByCategory.foraging[item] = value;
+    } else if (item.includes("FISH") || item.includes("SALMON") || item.includes("CLOWNFISH") || item.includes("PUFFERFISH") || item.includes("PRISMARINE") || item.includes("INK") || item.includes("LILY") || item.includes("SPONGE")) {
+      collectionsByCategory.fishing[item] = value;
+    }
+  }
+
+  const totalCollections = Object.keys(collections).length;
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    totalCollections: totalCollections,
+    collectionsByCategory: collectionsByCategory,
+    topCollections: Object.entries(collections)
+      .sort(([, a], [, b]) => Number(b) - Number(a))
+      .slice(0, 10)
+      .map(([item, amount]) => ({ item, amount }))
+  }, null, 2);
+}
+
+// Pets System
+async function getPlayerPets(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member || !member.pets) {
+    return JSON.stringify({
+      username: username,
+      profile: profile.cute_name,
+      pets: [],
+      totalPets: 0
+    }, null, 2);
+  }
+
+  const pets = member.pets.map((pet: any) => ({
+    type: pet.type,
+    tier: pet.tier,
+    exp: pet.exp || 0,
+    active: pet.active || false,
+    heldItem: pet.heldItem || null,
+    candyUsed: pet.candyUsed || 0
+  }));
+
+  const petsByRarity: Record<string, number> = {};
+  pets.forEach((pet: any) => {
+    petsByRarity[pet.tier] = (petsByRarity[pet.tier] || 0) + 1;
+  });
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    totalPets: pets.length,
+    petsByRarity: petsByRarity,
+    activePet: pets.find((p: any) => p.active) || null,
+    pets: pets.slice(0, 20)
+  }, null, 2);
+}
+
+// Fairy Souls
+async function getFairySouls(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member) {
+    return `Member data not found in profile`;
+  }
+
+  const fairySouls = member.fairy_souls_collected || 0;
+  const maxFairySouls = 247; // Total fairy souls in the game
+  const percentage = (fairySouls / maxFairySouls) * 100;
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    fairySoulsCollected: fairySouls,
+    maxFairySouls: maxFairySouls,
+    remaining: maxFairySouls - fairySouls,
+    percentageComplete: Math.round(percentage * 100) / 100
+  }, null, 2);
+}
+
+// Jacob's Contests
+async function getJacobsData(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member || !member.jacob2) {
+    return JSON.stringify({
+      username: username,
+      profile: profile.cute_name,
+      medals: { gold: 0, silver: 0, bronze: 0 },
+      perks: {},
+      contests: {}
+    }, null, 2);
+  }
+
+  const jacobData = member.jacob2;
+  const medals = jacobData.medals_inv || { gold: 0, silver: 0, bronze: 0 };
+  const perks = jacobData.perks || {};
+  const contests = jacobData.contests || {};
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    medals: medals,
+    totalMedals: (medals.gold || 0) + (medals.silver || 0) + (medals.bronze || 0),
+    perks: perks,
+    contestsParticipated: Object.keys(contests).length
+  }, null, 2);
+}
+
+// Museum
+async function getMuseumData(username: string, profileName?: string): Promise<string> {
+  const profileData: SkyblockProfileResponse = await makeHypixelRequest(`/skyblock/profiles?name=${username}`);
+
+  if (!profileData.success || !profileData.profiles || profileData.profiles.length === 0) {
+    return `No Skyblock profiles found for "${username}"`;
+  }
+
+  const playerData: HypixelPlayerResponse = await makeHypixelRequest(`/player?name=${username}`);
+  if (!playerData.success || !playerData.player) {
+    return `Player "${username}" not found`;
+  }
+
+  const uuid = playerData.player.uuid;
+  let profile = profileData.profiles[0];
+
+  if (profileName) {
+    const found = profileData.profiles.find(p => p.cute_name.toLowerCase() === profileName.toLowerCase());
+    if (found) profile = found;
+  }
+
+  const member = profile.members[uuid];
+  if (!member || !member.museum) {
+    return JSON.stringify({
+      username: username,
+      profile: profile.cute_name,
+      itemsDonated: 0,
+      value: 0
+    }, null, 2);
+  }
+
+  const museum = member.museum;
+  const itemsDonated = Object.keys(museum.items || {}).length;
+  const museumValue = museum.value || 0;
+
+  return JSON.stringify({
+    username: username,
+    profile: profile.cute_name,
+    itemsDonated: itemsDonated,
+    value: museumValue,
+    items: museum.items || {}
+  }, null, 2);
+}
+
+// Guild Statistics
+async function getGuildStats(guildName: string): Promise<string> {
+  const guildData = await makeHypixelRequest(`/guild?name=${encodeURIComponent(guildName)}`);
+
+  if (!guildData.success || !guildData.guild) {
+    return `Guild "${guildName}" not found`;
+  }
+
+  const guild = guildData.guild;
+
+  return JSON.stringify({
+    name: guild.name,
+    tag: guild.tag || null,
+    level: guild.level || 0,
+    exp: guild.exp || 0,
+    members: guild.members.length,
+    created: new Date(guild.created).toISOString(),
+    description: guild.description || "",
+    preferredGames: guild.preferredGames || [],
+    publiclyListed: guild.publiclyListed || false
+  }, null, 2);
+}
+
+// Minion Calculator (production estimates)
+const MINION_PRODUCTION: Record<string, { itemsPerHour: number; sellPrice: number }> = {
+  "WHEAT": { itemsPerHour: 480, sellPrice: 2 },
+  "CARROT": { itemsPerHour: 480, sellPrice: 2 },
+  "POTATO": { itemsPerHour: 480, sellPrice: 2 },
+  "COBBLESTONE": { itemsPerHour: 240, sellPrice: 3 },
+  "SNOW": { itemsPerHour: 240, sellPrice: 1 },
+  "CLAY": { itemsPerHour: 160, sellPrice: 3 },
+  "DIAMOND": { itemsPerHour: 64, sellPrice: 8 },
+  "OBSIDIAN": { itemsPerHour: 160, sellPrice: 10 }
+};
+
+async function calculateMinionProfit(minionType: string, tier: number = 11): Promise<string> {
+  const minionData = MINION_PRODUCTION[minionType.toUpperCase()];
+
+  if (!minionData) {
+    return `Minion type "${minionType}" not found. Available: ${Object.keys(MINION_PRODUCTION).join(", ")}`;
+  }
+
+  const tierMultiplier = 1 + (tier - 1) * 0.05;
+  const itemsPerHour = minionData.itemsPerHour * tierMultiplier;
+  const profitPerHour = itemsPerHour * minionData.sellPrice;
+  const profitPerDay = profitPerHour * 24;
+
+  return JSON.stringify({
+    minionType: minionType.toUpperCase(),
+    tier: tier,
+    itemsPerHour: Math.round(itemsPerHour),
+    profitPerHour: Math.round(profitPerHour),
+    profitPerDay: Math.round(profitPerDay),
+    profitPerWeek: Math.round(profitPerDay * 7),
+    note: "Estimates based on base production rates. Actual rates may vary with fuel and upgrades."
+  }, null, 2);
+}
+
+// Item Price Comparison
+async function compareItemPrices(itemId: string): Promise<string> {
+  const data: BazaarResponse = await makeHypixelRequest("/skyblock/bazaar");
+
+  if (!data.success || !data.products) {
+    return "Failed to fetch bazaar data";
+  }
+
+  const product = data.products[itemId.toUpperCase()];
+
+  if (!product) {
+    return `Item "${itemId}" not found in bazaar`;
+  }
+
+  return JSON.stringify({
+    item: itemId.toUpperCase(),
+    bazaarBuyPrice: product.quick_status.buyPrice,
+    bazaarSellPrice: product.quick_status.sellPrice,
+    spread: product.quick_status.buyPrice - product.quick_status.sellPrice,
+    spreadPercent: ((product.quick_status.buyPrice - product.quick_status.sellPrice) / product.quick_status.buyPrice) * 100,
+    instantBuy: product.quick_status.sellPrice,
+    instantSell: product.quick_status.buyPrice,
+    recommendation: product.quick_status.buyPrice - product.quick_status.sellPrice > 1000
+      ? "Good flip opportunity"
+      : "Low profit margin"
+  }, null, 2);
+}
+
 const server = new Server(
   {
     name: "hypixel-skyblock-mcp",
@@ -873,6 +1211,142 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["username"],
         },
       },
+      {
+        name: "get_player_collections",
+        description: "Get collection statistics for a player. Returns all collections organized by category (farming, mining, combat, foraging, fishing).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name. Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "get_player_pets",
+        description: "Get all pets owned by a player. Returns pet types, rarities, levels, and active pet.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name. Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "get_fairy_souls",
+        description: "Get fairy souls collection progress. Returns total collected, remaining, and completion percentage.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name. Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "get_jacobs_data",
+        description: "Get Jacob's farming contest statistics. Returns medals won, perks unlocked, and contests participated.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name. Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "get_museum_data",
+        description: "Get museum donation statistics. Returns items donated and museum value.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: {
+              type: "string",
+              description: "The Minecraft username to look up",
+            },
+            profile_name: {
+              type: "string",
+              description: "Optional: Specific profile name. Uses first profile if not specified.",
+            },
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "get_guild_stats",
+        description: "Get statistics for a guild by name. Returns member count, level, exp, and creation date.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_name: {
+              type: "string",
+              description: "The name of the guild to look up",
+            },
+          },
+          required: ["guild_name"],
+        },
+      },
+      {
+        name: "calculate_minion_profit",
+        description: "Calculate estimated profit for a minion type and tier. Returns items per hour and profit estimates.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            minion_type: {
+              type: "string",
+              description: "Type of minion (e.g., 'WHEAT', 'DIAMOND', 'COBBLESTONE')",
+            },
+            tier: {
+              type: "number",
+              description: "Optional: Minion tier (1-12, default: 11)",
+            },
+          },
+          required: ["minion_type"],
+        },
+      },
+      {
+        name: "compare_item_prices",
+        description: "Compare buy and sell prices for an item in the Bazaar. Returns spread analysis and flip recommendations.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            item_id: {
+              type: "string",
+              description: "The item ID to compare (e.g., 'ENCHANTED_DIAMOND')",
+            },
+          },
+          required: ["item_id"],
+        },
+      },
     ] as Tool[],
   };
 });
@@ -986,6 +1460,76 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const username = String(args?.username);
         const profileName = args?.profile_name ? String(args.profile_name) : undefined;
         const result = await calculateNetworth(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_player_collections": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await getPlayerCollections(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_player_pets": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await getPlayerPets(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_fairy_souls": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await getFairySouls(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_jacobs_data": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await getJacobsData(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_museum_data": {
+        const username = String(args?.username);
+        const profileName = args?.profile_name ? String(args.profile_name) : undefined;
+        const result = await getMuseumData(username, profileName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "get_guild_stats": {
+        const guildName = String(args?.guild_name);
+        const result = await getGuildStats(guildName);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "calculate_minion_profit": {
+        const minionType = String(args?.minion_type);
+        const tier = args?.tier ? Number(args.tier) : 11;
+        const result = await calculateMinionProfit(minionType, tier);
+        return {
+          content: [{ type: "text", text: result }],
+        };
+      }
+
+      case "compare_item_prices": {
+        const itemId = String(args?.item_id);
+        const result = await compareItemPrices(itemId);
         return {
           content: [{ type: "text", text: result }],
         };
